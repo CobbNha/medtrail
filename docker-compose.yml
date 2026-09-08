@@ -17,6 +17,7 @@ services:
       dockerfile: backend/Dockerfile
     environment:
       DATABASE_URL: postgresql+psycopg://medtrail:medtrail_dev_password@db:5432/medtrail
+      PORT: "8000"
       JWT_SECRET: CHANGE_THIS_IN_PRODUCTION
       STORAGE_DIR: /app/storage
       MAX_FILE_SIZE_MB: "20"
