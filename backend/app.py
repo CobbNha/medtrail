@@ -15,6 +15,8 @@ BASE_DIR=Path(__file__).resolve().parent.parent
 DB=os.getenv("DATABASE_URL",f"sqlite:///{BASE_DIR / 'medtrail.db'}")
 if DB.startswith("postgres://"):
     DB="postgresql+psycopg://" + DB.removeprefix("postgres://")
+elif DB.startswith("postgresql://"):
+    DB="postgresql+psycopg://" + DB.removeprefix("postgresql://")
 ARGS={"check_same_thread":False} if DB.startswith("sqlite") else {}
 engine=create_engine(DB,connect_args=ARGS,pool_pre_ping=True)
 STORE=Path(os.getenv("STORAGE_DIR",str(BASE_DIR / "storage"))); STORE.mkdir(parents=True,exist_ok=True)
