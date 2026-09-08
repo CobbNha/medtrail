@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: medtrail
+      POSTGRES_USER: medtrail
+      POSTGRES_PASSWORD: medtrail_dev_password
+    volumes: [medtrail_db:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U medtrail -d medtrail"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://medtrail:medtrail_dev_password@db:5432/medtrail
+      JWT_SECRET: CHANGE_THIS_IN_PRODUCTION
+      STORAGE_DIR: /app/storage
+      MAX_FILE_SIZE_MB: "20"
+      DEMO_EMAIL: admin@medtrail.local
+      DEMO_PASSWORD: ChangeMe123!
+    volumes: [./storage:/app/storage]
+    ports: ["8000:8000"]
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  medtrail_db:
