@@ -11,13 +11,18 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, Session
 try: import magic
 except: magic=None
 
-DB=os.getenv("DATABASE_URL","sqlite:///./medtrail.db")
+BASE_DIR=Path(__file__).resolve().parent.parent
+DB=os.getenv("DATABASE_URL",f"sqlite:///{BASE_DIR / 'medtrail.db'}")
+if DB.startswith("postgres://"):
+    DB="postgresql+psycopg://" + DB.removeprefix("postgres://")
 ARGS={"check_same_thread":False} if DB.startswith("sqlite") else {}
-engine=create_engine(DB,connect_args=ARGS)
-STORE=Path(os.getenv("STORAGE_DIR","./storage")); STORE.mkdir(parents=True,exist_ok=True)
+engine=create_engine(DB,connect_args=ARGS,pool_pre_ping=True)
+STORE=Path(os.getenv("STORAGE_DIR",str(BASE_DIR / "storage"))); STORE.mkdir(parents=True,exist_ok=True)
 MAX=int(os.getenv("MAX_FILE_SIZE_MB","20"))*1024*1024
-SECRET=os.getenv("JWT_SECRET","dev-change-me")
-EMAIL=os.getenv("DEMO_EMAIL","admin@medtrail.local"); PASSWORD=os.getenv("DEMO_PASSWORD","ChangeMe123!")
+SECRET=os.getenv("JWT_SECRET")
+EMAIL=os.getenv("DEMO_EMAIL","admin@medtrail.local"); PASSWORD=os.getenv("DEMO_PASSWORD")
+if not SECRET or not PASSWORD:
+    raise RuntimeError("JWT_SECRET e DEMO_PASSWORD devem estar configurados")
 pwd=CryptContext(schemes=["bcrypt"],deprecated="auto"); auth=HTTPBearer(auto_error=False)
 ALLOW={".pdf":{"application/pdf"},".png":{"image/png"},".jpg":{"image/jpeg"},".jpeg":{"image/jpeg"},
 ".docx":{"application/zip","application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
@@ -53,7 +58,7 @@ def tok(u): return jwt.encode({"sub":str(u.id),"exp":datetime.now(timezone.utc)+
 @app.get("/health")
 def health(): return {"status":"ok","service":"MEDTRAIL"}
 @app.get("/",response_class=HTMLResponse)
-def home(): return FileResponse("/app/frontend/index.html")
+def home(): return FileResponse(BASE_DIR / "frontend" / "index.html")
 @app.post("/api/login")
 def login(data:dict):
     with Session(engine) as s:
